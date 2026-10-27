@@ -1,18 +1,30 @@
 package fr.amonteiro.a10_ipi_g1_android.presentation.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES
@@ -26,7 +38,7 @@ import fr.amonteiro.a10_ipi_g1_android.R
 import fr.amonteiro.a10_ipi_g1_android.data.fake.WeatherFakeDataSource
 import fr.amonteiro.a10_ipi_g1_android.domain.Weather
 import fr.amonteiro.a10_ipi_g1_android.presentation.MainViewModel
-import fr.amonteiro.a10_ipi_g1_android.ui.theme.A10_ipi_g1_androidTheme
+import fr.amonteiro.a10_ipi_g1_android.ui.theme.AppTheme
 
 @Preview(showBackground = true, showSystemUi = true)
 @Preview(
@@ -37,7 +49,7 @@ import fr.amonteiro.a10_ipi_g1_android.ui.theme.A10_ipi_g1_androidTheme
 fun SearchScreenPreview() {
     //Il faut remplacer NomVotreProjetTheme par le thème de votre application
     //Utilisé par exemple dans MainActivity.kt sous setContent {...}
-    A10_ipi_g1_androidTheme {
+    AppTheme {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             val list = WeatherFakeDataSource.loadFakeData()
 
@@ -63,21 +75,93 @@ fun SearchScreen(
 fun SearchScreenContent(modifier: Modifier = Modifier, list: List<Weather>) {
     Column(
         modifier = modifier
-            .background(Color.LightGray)
-            .fillMaxSize()
+            .fillMaxSize(),
+
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        list.forEach {
-            PictureRowItem(data = it)
+        SearchBar()
+
+
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(list.size) {
+                PictureRowItem(data = list[it])
+            }
         }
 
+        Row {
+
+            Button(
+                onClick = { /* Do something! */ },
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding
+            ) {
+                Icon(
+                    Icons.Filled.Favorite,
+                    contentDescription = "Localized description",
+                    modifier = Modifier.size(ButtonDefaults.IconSize)
+                )
+                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                Text("Cancel")
+            }
+
+            Button(
+                onClick = { /* Do something! */ },
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding
+            ) {
+                Icon(
+                    Icons.Filled.Favorite,
+                    contentDescription = "Localized description",
+                    modifier = Modifier.size(ButtonDefaults.IconSize)
+                )
+                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                Text("Load")
+            }
+        }
     }
 }
+
+@Composable
+fun SearchBar(modifier: Modifier = Modifier) {
+    TextField(
+        value = "", //Valeur affichée
+        onValueChange = {newValue:String -> }, //Nouveau texte entrée
+        leadingIcon = { //Image d'icône
+            Icon(
+                imageVector = Icons.Default.Search,
+                tint = MaterialTheme.colorScheme.primary,
+                contentDescription = null
+            )
+        },
+        singleLine = true,
+        label = { //Texte d'aide qui se déplace
+            Text("Enter text")
+            //Pour aller le chercher dans strings.xml, R de votre package com.nom.projet
+            //Text(stringResource(R.string.placeholder_search))
+        },
+        //placeholder = { //Texte d'aide qui disparait
+        //Text("Recherche")
+        //},
+
+        //keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), // Définir le bouton "Entrée" comme action de recherche
+        //keyboardActions = KeyboardActions(onSearch = {onSearchAction()}), // Déclenche l'action définie
+        //Comment le composant doit se placer
+        modifier = modifier
+            .fillMaxWidth() // Prend toute la largeur
+            .heightIn(min = 56.dp) //Hauteur minimum
+    )
+}
+
 
 @Composable //Composable affichant 1 élément
 fun PictureRowItem(modifier: Modifier = Modifier, data: Weather) {
     Row(
-        modifier = modifier.background(Color.White).fillMaxWidth()
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.tertiaryContainer)
+            .fillMaxWidth()
     ) {
         //image
 //Permission Internet nécessaire

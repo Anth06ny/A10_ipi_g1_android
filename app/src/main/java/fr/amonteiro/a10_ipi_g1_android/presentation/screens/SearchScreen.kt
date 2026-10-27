@@ -1,6 +1,8 @@
 package fr.amonteiro.a10_ipi_g1_android.presentation.screens
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +25,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -68,6 +76,10 @@ fun SearchScreen(
 ) {
     val list = mainViewModel.dataList.collectAsStateWithLifecycle().value
 
+    LaunchedEffect("") {
+        mainViewModel.loadWeathers("Nice")
+    }
+
     SearchScreenContent(modifier = modifier, list = list)
 }
 
@@ -80,23 +92,25 @@ fun SearchScreenContent(modifier: Modifier = Modifier, list: List<Weather>) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        SearchBar()
+        val searchText : MutableState<String> = remember { mutableStateOf("") }
+        val filterList = list.filter { it.name.contains(searchText.value, true) }
 
+        SearchBar(searchText = searchText.value) { searchText.value = it }
 
         LazyColumn(
             modifier = Modifier.weight(1f),
 
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(list.size) {
-                PictureRowItem(data = list[it])
+            items(filterList.size) {
+                PictureRowItem(data = filterList[it])
             }
         }
 
         Row {
 
             Button(
-                onClick = { /* Do something! */ },
+                onClick = { searchText.value = "" },
                 contentPadding = ButtonDefaults.ButtonWithIconContentPadding
             ) {
                 Icon(
@@ -125,10 +139,12 @@ fun SearchScreenContent(modifier: Modifier = Modifier, list: List<Weather>) {
 }
 
 @Composable
-fun SearchBar(modifier: Modifier = Modifier) {
+fun SearchBar(modifier: Modifier = Modifier, searchText: String, onValueChangeListener : (String)->Unit) {
+
+
     TextField(
-        value = "", //Valeur affichée
-        onValueChange = {newValue:String -> }, //Nouveau texte entrée
+        value = searchText, //Valeur affichée
+        onValueChange = onValueChangeListener, //Nouveau texte entrée
         leadingIcon = { //Image d'icône
             Icon(
                 imageVector = Icons.Default.Search,
@@ -158,6 +174,9 @@ fun SearchBar(modifier: Modifier = Modifier) {
 
 @Composable //Composable affichant 1 élément
 fun PictureRowItem(modifier: Modifier = Modifier, data: Weather) {
+
+    var expended by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier
             .background(MaterialTheme.colorScheme.tertiaryContainer)
@@ -185,9 +204,13 @@ fun PictureRowItem(modifier: Modifier = Modifier, data: Weather) {
                 .widthIn(max = 100.dp)
         )
 
-        Column {
+        Column(modifier = Modifier.fillMaxWidth().clickable{
+            expended =  !expended
+        }) {
             Text(text = data.name, fontSize = 20.sp)
-            Text(text = data.getResume().take(20) + "...", fontSize = 14.sp)
+            Text(modifier = Modifier.animateContentSize(),
+                text = if(expended) data.getResume() else data.getResume().take(20) + "...",
+                fontSize = 14.sp)
         }
 
     }

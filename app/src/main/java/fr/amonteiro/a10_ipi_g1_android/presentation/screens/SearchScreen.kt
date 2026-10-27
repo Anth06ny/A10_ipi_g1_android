@@ -1,5 +1,6 @@
 package fr.amonteiro.a10_ipi_g1_android.presentation.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -41,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import fr.amonteiro.a10_ipi_g1_android.R
 import fr.amonteiro.a10_ipi_g1_android.data.fake.WeatherFakeDataSource
@@ -63,7 +66,27 @@ fun SearchScreenPreview() {
 
             SearchScreenContent(
                 modifier = Modifier.padding(innerPadding),
-                list = list
+                list = list,
+                runInProgress = true,
+                errorMessage = "Une erreur est survenue"
+            )
+        }
+    }
+}
+
+@Preview(
+    showBackground = true, showSystemUi = true,
+    uiMode = UI_MODE_NIGHT_YES or UI_MODE_TYPE_NORMAL
+)
+@Composable
+fun SearchScreenNoDataPreview() {
+    //Il faut remplacer NomVotreProjetTheme par le thème de votre application
+    //Utilisé par exemple dans MainActivity.kt sous setContent {...}
+    AppTheme {
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            SearchScreenContent(
+                modifier = Modifier.padding(innerPadding),
+                list = emptyList()
             )
         }
     }
@@ -72,30 +95,56 @@ fun SearchScreenPreview() {
 @Composable
 fun SearchScreen(
     modifier: Modifier = Modifier,
-    mainViewModel: MainViewModel = MainViewModel()
+    mainViewModel: MainViewModel = viewModel()
 ) {
     val list = mainViewModel.dataList.collectAsStateWithLifecycle().value
+    val runInProgress = mainViewModel.runInProgress.collectAsStateWithLifecycle().value
+    val errorMessage = mainViewModel.errorMessage.collectAsStateWithLifecycle().value
 
     LaunchedEffect("") {
         mainViewModel.loadWeathers("Nice")
     }
 
-    SearchScreenContent(modifier = modifier, list = list)
+    SearchScreenContent(
+        modifier = modifier,
+        list = list,
+        runInProgress = runInProgress,
+        errorMessage = errorMessage,
+        onBtLoadClick = { mainViewModel.loadWeathers(it)}
+    )
 }
 
 @Composable
-fun SearchScreenContent(modifier: Modifier = Modifier, list: List<Weather>) {
+fun SearchScreenContent(
+    modifier: Modifier = Modifier,
+    list: List<Weather>,
+    runInProgress : Boolean = false,
+    errorMessage : String = "",
+    onBtLoadClick: (String) -> Unit = {}
+) {
     Column(
         modifier = modifier
             .fillMaxSize(),
-
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        val searchText : MutableState<String> = remember { mutableStateOf("") }
-        val filterList = list.filter { it.name.contains(searchText.value, true) }
+        val searchText: MutableState<String> = remember { mutableStateOf("") }
+        val filterList = list //.filter { it.name.contains(searchText.value, true) }
 
         SearchBar(searchText = searchText.value) { searchText.value = it }
+
+        AnimatedVisibility(visible = errorMessage?.isNotBlank() == true) {
+            Text(
+                text = errorMessage ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onError,
+                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.error)
+            )
+        }
+
+        AnimatedVisibility (runInProgress) {
+            CircularProgressIndicator()
+        }
 
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -123,7 +172,7 @@ fun SearchScreenContent(modifier: Modifier = Modifier, list: List<Weather>) {
             }
 
             Button(
-                onClick = { /* Do something! */ },
+                onClick = { onBtLoadClick(searchText.value) },
                 contentPadding = ButtonDefaults.ButtonWithIconContentPadding
             ) {
                 Icon(
@@ -139,7 +188,11 @@ fun SearchScreenContent(modifier: Modifier = Modifier, list: List<Weather>) {
 }
 
 @Composable
-fun SearchBar(modifier: Modifier = Modifier, searchText: String, onValueChangeListener : (String)->Unit) {
+fun SearchBar(
+    modifier: Modifier = Modifier,
+    searchText: String,
+    onValueChangeListener: (String) -> Unit
+) {
 
 
     TextField(
@@ -204,13 +257,18 @@ fun PictureRowItem(modifier: Modifier = Modifier, data: Weather) {
                 .widthIn(max = 100.dp)
         )
 
-        Column(modifier = Modifier.fillMaxWidth().clickable{
-            expended =  !expended
-        }) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    expended = !expended
+                }) {
             Text(text = data.name, fontSize = 20.sp)
-            Text(modifier = Modifier.animateContentSize(),
-                text = if(expended) data.getResume() else data.getResume().take(20) + "...",
-                fontSize = 14.sp)
+            Text(
+                modifier = Modifier.animateContentSize(),
+                text = if (expended) data.getResume() else data.getResume().take(20) + "...",
+                fontSize = 14.sp
+            )
         }
 
     }

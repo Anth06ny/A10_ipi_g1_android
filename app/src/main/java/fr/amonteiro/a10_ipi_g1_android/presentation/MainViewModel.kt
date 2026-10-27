@@ -40,8 +40,6 @@ class MainViewModel : ViewModel() {
     fun loadWeathers(cityName: String) {
         runInProgress.value = true
 
-
-
         viewModelScope.launch(Dispatchers.IO) {
             try {
 
